@@ -1,5 +1,7 @@
 ﻿using Callcenter.DBConnection;
 using Callcenter.Models;
+using Callcenter.Models.Identity;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.SignalR;
 using MongoDB.Bson;
 using System;
@@ -15,9 +17,13 @@ namespace Callcenter.Controllers
     internal partial class SignalRHub : Hub
     {
         private readonly Database database;
-        public SignalRHub(Database database)
+        private readonly SignInManager<ApplicationUser> siginmanager;
+        private readonly UserManager<ApplicationUser> userManager;
+        public SignalRHub(Database database, SignInManager<ApplicationUser> siginmanager, UserManager<ApplicationUser> userManager)
         {
             this.database = database;
+            this.siginmanager = siginmanager;
+            this.userManager = userManager;
         }
         internal static EntryRequest ParseRequest(string request)
         {

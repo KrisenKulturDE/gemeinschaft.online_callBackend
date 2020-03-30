@@ -1,4 +1,5 @@
-﻿using MongoDB.Bson;
+﻿using Callcenter.Models.Identity;
+using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 using System;
 using System.Collections.Generic;
@@ -11,7 +12,7 @@ namespace Callcenter.Models
     {
         [BsonId]
         public ObjectId id { get; set; }
-        public string organisation { get; set; }
+        public ApplicationUser user { get; set; }
         public string entry { get; set; }
         public DateTime timestamp { get; set; }
         public DateTime? gesendet { get; set; }

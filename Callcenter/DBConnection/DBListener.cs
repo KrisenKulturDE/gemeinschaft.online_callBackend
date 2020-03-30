@@ -1,4 +1,5 @@
 ﻿using Callcenter.Models;
+using Callcenter.Models.Identity;
 using Microsoft.AspNetCore.SignalR;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
@@ -26,24 +27,25 @@ namespace Callcenter.DBConnection
                 .Project("{ fullDocument: 1 }");
 
             using var cursor = requests.Watch(pipeline, options);
-            await cursor.ForEachAsync(change =>
+            await cursor.ForEachAsync(async change =>
             {
                 Entry entry = BsonSerializer.Deserialize<Entry>((BsonDocument)change.Elements.ToList()[1].Value);
                 if (entry.zip.Equals("00000"))
                 {
+                    var list = await users.FindAsync("{ \"zips\": {$in: [ '00000', ]}}");
                     var send = entry.TrasportModel;
-                    _hubContext.Clients.All.SendAsync("ItemChange", send);
-                    foreach (Observer organisation in observer.Find("{ \"zips\": {$in: [ '00000', ]}}").ToList<Observer>())
+                    foreach (ApplicationUser user in list.ToEnumerable<ApplicationUser>())
                     {
+                        await _hubContext.Clients.User(user.Id.ToString()).SendAsync("ItemChange", send);
                         var notifikation = new Notifikation()
                         {
                             entry = entry.id.ToString(),
-                            organisation = organisation.id.ToString(),
+                            user = user,
                             timestamp = DateTime.Now
                         };
                         if (TryAddNotifkation(notifikation))
                         {
-                            notifikationFactory.Send(notifikation, organisation, entry);
+                            notifikationFactory.Send(notifikation, user, entry);
                         }
                     }
                 }
@@ -56,17 +58,20 @@ namespace Callcenter.DBConnection
                         sb.Append(entry.zip.Substring(0, entry.zip.Length - i));
                         sb.Append("', ");
                     }
-                    foreach (Observer organisation in observer.Find($"{{ \"zips\": {{$in: [ {sb.ToString()} ]}}}}").ToList<Observer>())
+                    var list = await users.FindAsync($"{{ \"zips\": {{$in: [ {sb.ToString()} ]}}}}");
+                    var send = entry.TrasportModel;
+                    foreach (ApplicationUser user in list.ToEnumerable<ApplicationUser>())
                     {
+                        await _hubContext.Clients.User(user.Id.ToString()).SendAsync("ItemChange", send);
                         var notifikation = new Notifikation()
                         {
                             entry = entry.id.ToString(),
-                            organisation = organisation.id.ToString(),
+                            user = user,
                             timestamp = DateTime.Now
                         };
                         if (TryAddNotifkation(notifikation))
                         {
-                            notifikationFactory.Send(notifikation, organisation, entry);
+                            notifikationFactory.Send(notifikation, user, entry);
                         }
                     }
                 }

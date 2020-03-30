@@ -25,7 +25,7 @@ namespace Callcenter.Models
         public bool marked { get; set; }
         public object __v { get; set; }
         public string CString => marked ? "other" : string.Empty;
-        public EntryFill TrasportModel => new EntryFill()
+        public EntryTransport TrasportModel => new EntryTransport()
         {
             id = id.ToString(),
             timestamp = timestamp,

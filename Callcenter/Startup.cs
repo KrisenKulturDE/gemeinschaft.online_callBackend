@@ -6,12 +6,15 @@ using Callcenter.Config;
 using Callcenter.Controllers;
 using Callcenter.DBConnection;
 using Callcenter.Models;
+using Callcenter.Models.Identity;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.HttpsPolicy;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using MongoDbGenericRepository;
 
 namespace Callcenter
 {
@@ -27,11 +30,15 @@ namespace Callcenter
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddSignalR();
-            services.AddSingleton<Database>();
 
             services.AddOptions();
             services.Configure<MongoDbConf>(Configuration.GetSection(nameof(MongoDbConf)));
+            services.AddSignalR();
+            services.AddSingleton<Database>();
+            services.AddIdentity<ApplicationUser, ApplicationRole>()
+                 //Hier muss irgendwie rein, des es über die gemeinsame db verbindung mit Database geht, komme nur noch nicht an das singleton.
+                 .AddMongoDbStores<ApplicationUser, ApplicationRole, Guid>("mongodb://192.168.10.142:27017", "coronadb")
+                 .AddDefaultTokenProviders();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -52,7 +59,7 @@ namespace Callcenter
 
             app.UseRouting();
 
-            //app.UseAuthorization();
+            app.UseAuthorization();
 
             app.UseEndpoints(endpoints =>
             {

@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace Callcenter.Models
 {
-    public class EntryFill
+    public class EntryTransport
     {
         public string id { get; set; }
         public DateTime timestamp { get; set; }

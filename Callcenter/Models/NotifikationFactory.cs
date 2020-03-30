@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Callcenter.DBConnection;
+using Callcenter.Models.Identity;
 
 namespace Callcenter.Models
 {
@@ -15,9 +16,9 @@ namespace Callcenter.Models
             this.database = database;
         }
 
-        internal void Send(Notifikation notifikation, Observer organisation, Entry entry)
+        internal void Send(Notifikation notifikation, ApplicationUser user, Entry entry)
         {
-            Console.WriteLine($"Notifikation Gesendet: {organisation.name} Telefonnummer: {entry.phone}");
+            Console.WriteLine($"Notifikation Gesendet: {user.NormalizedUserName} Telefonnummer: {entry.phone}");
         }
     }
 }

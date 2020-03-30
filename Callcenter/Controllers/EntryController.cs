@@ -15,7 +15,7 @@ using System.IO;
 
 namespace Callcenter.Controllers
 {
-    internal partial class SignalRHub
+    internal partial class SignalRHub:Hub
     {
 
         /// <summary>
@@ -40,17 +40,19 @@ namespace Callcenter.Controllers
         /// </summary>
         /// <param name="id"></param>
         /// <returns></returns>
-        public Task<EntryFill> MarkEntry(string id)
+        public Task<EntryTransport> MarkEntry(string id)
         {
-            Task<EntryFill> t = new Task<EntryFill>(() =>
+            Task<EntryTransport> t = new Task<EntryTransport>(() =>
             {
 
                 Entry entry = database.Find(new ObjectId(id));
-                if (entry != null)
+                if (entry == null)
                 {
-                    entry.marked = true;
-                    database.Replace(entry);
+                    throw new KeyNotFoundException($"Id {id} not found");
                 }
+                ThrowIfNoAccessToZip(entry.zip);
+                entry.marked = true;
+                database.Replace(entry);
                 return entry.TrasportModel;
             });
             t.Start();
@@ -60,9 +62,9 @@ namespace Callcenter.Controllers
         /// Speichert, eine neuen eintrag, wird ein verwendeter eintrag gespiechert, wird ein neuer mit altem timestamp erzeugt.
         /// </summary>
         /// <returns></returns>
-        public Task<EntryFill> AddOrModifyEntry(string id, string phone, string zip, string request)
+        public Task<EntryTransport> AddOrModifyEntry(string id, string phone, string zip, string request)
         {
-            Task<EntryFill> t = new Task<EntryFill>(() =>
+            Task<EntryTransport> t = new Task<EntryTransport>(() =>
             {
                 Entry entry = entry = new Entry()
                 {
@@ -134,7 +136,7 @@ namespace Callcenter.Controllers
         /// <param name="skip"></param>
         /// <param name="limit"></param>
         /// <returns></returns>
-        public IEnumerable<EntryFill> GetAllEntrys(int skip, int limit) => database.GetAll(skip, limit).Select(e => e.TrasportModel);
+        public IEnumerable<EntryTransport> GetAllEntrys(int skip, int limit) => database.GetAll(skip, limit).Select(e => e.TrasportModel);
         public long CountNoZip() => database.CountNoZip();
         public long CountCallHour() => database.CountCallHour();
         public long CountEditHour() => database.CountEditHour();
