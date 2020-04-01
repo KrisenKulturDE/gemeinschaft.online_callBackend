@@ -20,12 +20,14 @@ namespace Callcenter.Controllers
         private readonly Database database;
         private readonly SignInManager<ApplicationUser> siginmanager;
         private readonly UserManager<ApplicationUser> userManager;
+        private readonly JwtManager jwtManager;
         private static long ConnectionCount;
-        public SignalRHub(Database database, SignInManager<ApplicationUser> siginmanager, UserManager<ApplicationUser> userManager)
+        public SignalRHub(Database database, SignInManager<ApplicationUser> siginmanager, UserManager<ApplicationUser> userManager, JwtManager jwtManager)
         {
             this.database = database;
             this.siginmanager = siginmanager;
             this.userManager = userManager;
+            this.jwtManager = jwtManager;
         }
         public override Task OnConnectedAsync()
         {

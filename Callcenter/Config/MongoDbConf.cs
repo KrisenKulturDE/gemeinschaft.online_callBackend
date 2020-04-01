@@ -4,5 +4,6 @@
     {
         public string Connection { get; set; }
         public string DbName { get; set; }
+        public string JWTSecret { get; set; }
     }
 }

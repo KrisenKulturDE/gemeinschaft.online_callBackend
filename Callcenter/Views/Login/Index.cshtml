@@ -1,0 +1,30 @@
+﻿
+@{
+    ViewData["Title"] = "Index";
+    Layout = "";
+}
+
+<h1 id="token">Index</h1>
+<script type="text/javascript">
+    var LoginData = {
+        "email": "fabian@spottog.de",
+        "passwd": "passwd"
+    };
+    var xhr = new XMLHttpRequest();
+    xhr.open("POST", "/Login/Login", true);
+    xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+    xhr.onreadystatechange = function () {
+        if (this.readyState != 4) return;
+
+        if (this.status == 200) {
+            var tokenelm = document.getElementById("token");
+            tokenelm.innerHTML = this.responseText;
+            //var data = JSON.parse(this.responseText);
+
+            // we get the returned data
+        }
+
+        // end of state change: it can be after some time (async)
+    };
+    xhr.send(LoginData);
+</script>

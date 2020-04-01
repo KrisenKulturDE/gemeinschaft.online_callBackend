@@ -13,8 +13,13 @@ using Microsoft.AspNetCore.HttpsPolicy;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.Extensions.Hosting;
 using MongoDbGenericRepository;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.SignalR;
 
 namespace Callcenter
 {
@@ -27,45 +32,65 @@ namespace Callcenter
 
         public IConfiguration Configuration { get; }
 
-        // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-
             services.AddOptions();
-            services.Configure<MongoDbConf>(Configuration.GetSection(nameof(MongoDbConf)));
-            services.AddSignalR();
+            var dbconfigobject = Configuration.GetSection(nameof(MongoDbConf));
+            var dbconfig = dbconfigobject.Get<MongoDbConf>();
+            services.Configure<MongoDbConf>(dbconfigobject);
             services.AddSingleton<Database>();
+            services.AddSingleton<JwtManager>();
             services.AddIdentity<ApplicationUser, ApplicationRole>()
-                 //Hier muss irgendwie rein, des es über die gemeinsame db verbindung mit Database geht, komme nur noch nicht an das singleton.
-                 .AddMongoDbStores<ApplicationUser, ApplicationRole, Guid>("mongodb://192.168.10.142:27017", "coronadb")
-                 .AddDefaultTokenProviders();
+                 .AddMongoDbStores<ApplicationUser, ApplicationRole, Guid>(dbconfig.Connection, dbconfig.DbName);
+
+            services.AddAuthentication(options =>
+            {
+                options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+                options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+            })
+                .AddJwtBearer(options =>
+                {
+                    options.RequireHttpsMetadata = false;
+                    options.Events = new JwtBearerEvents
+                    {
+                        OnMessageReceived = context =>
+                        {
+                            var accessToken = context.Request.Query["access_token"];
+                            var path = context.HttpContext.Request.Path;
+                            if (!string.IsNullOrEmpty(accessToken) &&
+                                (path.StartsWithSegments("/Hub/")))
+                            {
+                                context.Token = accessToken;
+                            }
+                            return Task.CompletedTask;
+                        }
+                    };
+                    options.TokenValidationParameters = new TokenValidationParameters
+                    {
+                        ValidateIssuerSigningKey = true,
+                        IssuerSigningKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(dbconfig.JWTSecret)),
+                        ValidateIssuer = false,
+                        ValidateAudience = false
+                    };
+                });
+
+
+            services.AddSignalR();
+            services.AddMvc();
+
+            services.AddSingleton<IUserIdProvider, EmailBasedUserIdProvider>();
         }
 
-        // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
-            //if (env.IsDevelopment())
-            //{
-            //    app.UseDeveloperExceptionPage();
-            //}
-            //else
-            //{
-            //    app.UseExceptionHandler("/Home/Error");
-            //    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
-            //    app.UseHsts();
-            //}
-            ////app.UseHttpsRedirection();
-            //app.UseStaticFiles();
-
+            app.UseAuthentication();
             app.UseRouting();
-
             app.UseAuthorization();
-
             app.UseEndpoints(endpoints =>
             {
-                //endpoints.MapControllerRoute(
-                //    name: "default",
-                //    pattern: "{controller=Home}/{action=Index}/{id?}");
+                endpoints.MapControllerRoute(
+                    name: "default",
+                    pattern: "{controller=Home}/{action=Index}/{id?}");
                 endpoints.MapHub<SignalRHub>("/Hub");
             });
         }
